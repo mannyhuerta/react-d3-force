@@ -1,8 +1,14 @@
 import React, { Component } from 'react'
 import { withFauxDOM } from 'react-faux-dom'
 import './styles.css'
-//import { event as currentEvent } from 'd3-selection';
-import * as d3 from 'd3';
+import { event as currentEvent } from 'd3-selection';
+const d3 = {
+    ...require('d3-drag'),
+    ...require('d3-force'),
+    ...require('d3-selection'),
+    ...require('d3-hierarchy')
+
+}
 
 class ForceCollapsable extends Component {
     componentDidMount() {
@@ -22,9 +28,11 @@ class ForceCollapsable extends Component {
         const height = 800
         let faux = connectFauxDOM('div', 'chart')
 
-        const data = require('./lesmis.json')
-        const links = data.links.map(d => Object.create(d));
-        const nodes = data.nodes.map(d => Object.create(d));
+        // const data = require('./lesmis.json')
+        const data = require('./flare.json')
+        const root = d3.hierarchy(data)
+        const nodes = root.descendants()
+        const links = root.links()
 
         const svg = d3.select(faux).append('svg')
             .attr('width', width)
@@ -49,7 +57,8 @@ class ForceCollapsable extends Component {
             .selectAll("circle")
             .data(nodes)
             .enter().append("circle")
-            .attr("r", 2.5)
+            .attr("r", function (d) { console.log(d); return d.children ? 5 : Math.sqrt(d.data.size) / 10 })
+
             .on('mouseover', function d(d) { onChange(nodes[d.index].id); })
             .call(d3.drag()
                 .on("start", dragstarted)
@@ -79,7 +88,7 @@ class ForceCollapsable extends Component {
         }
 
         function dragstarted(d) {
-            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            if (!currentEvent.active) simulation.alphaTarget(0.3).restart();
             animateFauxDOM(10000)
             d.fx = d.x
             d.fy = d.y
@@ -87,18 +96,18 @@ class ForceCollapsable extends Component {
         }
 
         function dragged(d) {
-            d.fx = d3.event.sourceEvent.x
-            d.fy = d3.event.sourceEvent.y
+            d.fx = currentEvent.sourceEvent.x
+            d.fy = currentEvent.sourceEvent.y
         }
 
         function dragended(d) {
-            if (!d3.event.active) simulation.alphaTarget(0);
+            if (!currentEvent.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;
             animateFauxDOM(10000)
         }
 
-        animateFauxDOM(4000)
+        animateFauxDOM(10000)
     }
 }
 
